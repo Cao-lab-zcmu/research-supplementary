@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Lichuang Huang" />
+
+
+<title>MCnebula workflow for LC-MS/MS dataset analysis</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+<script>// Hide empty <a> tag within highlighted CodeBlock for screen reader accessibility (see https://github.com/jgm/pandoc/issues/6352#issuecomment-626106786) -->
+// v0.0.1
+// Written by JooYoung Seo (jooyoung@psu.edu) and Atsushi Yasumoto on June 1st, 2020.
+
+document.addEventListener('DOMContentLoaded', function() {
+  const codeList = document.getElementsByClassName("sourceCode");
+  for (var i = 0; i < codeList.length; i++) {
+    var linkList = codeList[i].getElementsByTagName('a');
+    for (var j = 0; j < linkList.length; j++) {
+      if (linkList[j].innerHTML === "") {
+        linkList[j].setAttribute('aria-hidden', 'true');
+      }
+    }
+  }
+});
+</script>
+
+<style type="text/css">
+  code{white-space: pre-wrap;}
+  span.smallcaps{font-variant: small-caps;}
+  span.underline{text-decoration: underline;}
+  div.column{display: inline-block; vertical-align: top; width: 50%;}
+  div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+  ul.task-list{list-style: none;}
+    </style>
+
+
+
+<style type="text/css">
+  code {
+    white-space: pre;
+  }
+  .sourceCode {
+    overflow: visible;
+  }
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    for (var j = 0; j < rules.length; j++) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") continue;
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') continue;
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">MCnebula workflow for LC-MS/MS dataset analysis</h1>
+<h4 class="author">Lichuang Huang</h4>
+
+
+
+<div id="introduction" class="section level2">
+<h2>Introduction</h2>
+<p>This vignette descrip a classified visualization method, called MCnebula, for the analysis of untargeted LC-MS/MS datasets. MCnebula utilizes the state-of-the-art computer prediction technology, SIRIUS workflow (SIRIUS, ZODIAC, CSI:fingerID, CANOPUS), for compound formula prediction, structure retrieve and classification prediction. MCnebula integrates an abundance-based class selection algorithm into compound annotation. The benefits of molecular networking, i.e. intuitive visualization and a large amount of integratable information, were incorporated into MCnebula visualization. With MCnebula, we can switch from untargeted to targeted analysis, focusing precisely on the compound or chemical class of interest to the researcher.</p>
+</div>
+<div id="r-and-other-softs-setup" class="section level2">
+<h2>R and other softs Setup</h2>
+<div id="r-setup" class="section level3">
+<h3>R setup</h3>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="kw">library</span>(MCnebula)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="kw">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="kw">library</span>(ggplot2)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a><span class="kw">library</span>(ggraph)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="kw">library</span>(grid)</span></code></pre></div>
+</div>
+<div id="others-setup" class="section level3">
+<h3>Others setup</h3>
+<p>The prerequisite soft for MCnebula is SIRIUS 4. Users can download that from <a href="https://bio.informatik.uni-jena.de/software/sirius/" class="uri">https://bio.informatik.uni-jena.de/software/sirius/</a>.</p>
+<p>   In addition, users are encouraged to perform MZmine 2 (<a href="https://github.com/mzmine/mzmine2" class="uri">https://github.com/mzmine/mzmine2</a>) for LC-MS/MS data processing.</p>
+<p>   Before mass spectrometry data been processed, the raw data should be converted to .mzML or .mzXML file in most cases. ProteoWizard (<a href="https://proteowizard.sourceforge.io/" class="uri">https://proteowizard.sourceforge.io/</a>) could be implemented for conversion.</p>
+</div>
+</div>
+<div id="data-preprocessing" class="section level2">
+<h2>Data preprocessing</h2>
+<div id="raw-data-processing" class="section level3">
+<h3>Raw data processing</h3>
+<p>For MZmine2 processing, an XML batch file outlined the example parameters for waters Qtof could be find in <a href="https://github.com/Cao-lab-zcmu/research-supplementary" class="uri">https://github.com/Cao-lab-zcmu/research-supplementary</a>.</p>
+</div>
+<div id="sirius-computation-workflow" class="section level3">
+<h3>SIRIUS computation workflow</h3>
+<p>Here we prepared some example files for this vignette to better illustrate MCnebula workflow.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>eg.path &lt;-<span class="st"> </span><span class="kw">system.file</span>(<span class="st">&quot;extdata&quot;</span>, <span class="st">&quot;raw_instance.tar.gz&quot;</span>, <span class="dt">package =</span> <span class="st">&quot;MCnebula&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a>tmp &lt;-<span class="st"> </span><span class="kw">tempdir</span>()</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>utils<span class="op">::</span><span class="kw">untar</span>(eg.path, <span class="dt">exdir =</span> tmp)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true"></a>mgf.path &lt;-<span class="st"> </span><span class="kw">paste0</span>(tmp, <span class="st">&quot;/&quot;</span>, <span class="st">&quot;instance5.mgf&quot;</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true"></a><span class="co">### show details of .mgf</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true"></a>data.table<span class="op">::</span><span class="kw">fread</span>(mgf.path, <span class="dt">header =</span> F, <span class="dt">sep =</span> <span class="ot">NULL</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true"></a><span class="co">#&gt;                           V1</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true"></a><span class="co">#&gt;   1:              </span><span class="re">BEGIN</span><span class="co"> IONS</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true"></a><span class="co">#&gt;   2:     FEATURE_ID=gnps1234</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true"></a><span class="co">#&gt;   3: PEPMASS=468.29557911617</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true"></a><span class="co">#&gt;   4:               CHARGE=+1</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true"></a><span class="co">#&gt;   5:               MSLEVEL=1</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true"></a><span class="co">#&gt;  ---                        </span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true"></a><span class="co">#&gt; 532:            381.78391 30</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true"></a><span class="co">#&gt; 533:           382.14539 260</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true"></a><span class="co">#&gt; 534:            383.14563 10</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true"></a><span class="co">#&gt; 535:                </span><span class="re">END</span><span class="co"> IONS</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true"></a><span class="co">#&gt; 536:</span></span></code></pre></div>
+<p>If SIRIUS soft has been download locally and the Environment Path has been set down (for example, set <code>PATH=$PATH:/you/your_dir/sirius-gui/bin</code> in <code>~/.bashrc</code>), the following is availlable:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="kw">system</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a>  <span class="kw">paste0</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true"></a>    <span class="st">&quot;sirius -i &quot;</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true"></a>    mgf.path,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true"></a>    <span class="st">&quot; -o test --maxmz 800 formula -c 50 zodiac structure canopus&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true"></a>    )</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true"></a>)</span></code></pre></div>
+<p>A more simpler approach is to use SIRIUS GUI version.</p>
+</div>
+<div id="mcnebula-processing" class="section level3">
+<h3>MCnebula processing</h3>
+<p>In deed, the computation of SIRIUS is time-consumed. It may cost several hours even days. Here, we prepared a fairly small dataset (SIRIUS project space) which has been done from SIRIUS computation. The following show the detail of this dataset.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="kw">list.files</span>(tmp) <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="st">  </span>.[<span class="kw">which</span>(. <span class="op">!=</span><span class="st"> &quot;instance5.mgf&quot;</span>)]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="co">#&gt;  [1] &quot;0_instance5_gnps1234&quot;                </span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true"></a><span class="co">#&gt;  [2] &quot;1_instance5_gnps1537&quot;                </span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true"></a><span class="co">#&gt;  [3] &quot;2_instance5_gnps1539&quot;                </span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true"></a><span class="co">#&gt;  [4] &quot;3_instance5_gnps1567&quot;                </span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true"></a><span class="co">#&gt;  [5] &quot;4_instance5_gnps1588&quot;                </span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true"></a><span class="co">#&gt;  [6] &quot;canopus_summary_adducts.tsv&quot;         </span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true"></a><span class="co">#&gt;  [7] &quot;canopus_summary.tsv&quot;                 </span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true"></a><span class="co">#&gt;  [8] &quot;canopus.tsv&quot;                         </span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true"></a><span class="co">#&gt;  [9] &quot;compound_identifications_adducts.tsv&quot;</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true"></a><span class="co">#&gt; [10] &quot;compound_identifications.tsv&quot;        </span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true"></a><span class="co">#&gt; [11] &quot;file301be318ec0249&quot;                  </span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true"></a><span class="co">#&gt; [12] &quot;file301be3dce66f&quot;                    </span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true"></a><span class="co">#&gt; [13] &quot;formula_identifications_adducts.tsv&quot; </span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true"></a><span class="co">#&gt; [14] &quot;formula_identifications.tsv&quot;         </span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true"></a><span class="co">#&gt; [15] &quot;mcnebula_results&quot;                    </span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true"></a><span class="co">#&gt; [16] &quot;report.mztab&quot;</span></span></code></pre></div>
+<div id="data-collating" class="section level4">
+<h4>Data collating</h4>
+<p>To begin with, MCnebula should he initialized in SIRIUS project.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">initialize_mcnebula</span>(tmp, <span class="dt">rm_mc.set =</span> T)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true"></a><span class="co">#&gt; Warning in dir.create(paste0(.MCn.output, &quot;/&quot;, .MCn.results)): &#39;/tmp/Rtmp1NB5KM/</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true"></a><span class="co">#&gt; mcnebula_results&#39; already exists</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true"></a><span class="co">#&gt; MCnebula project has initialized at -&gt; /tmp/Rtmp1NB5KM</span></span></code></pre></div>
+<p>This will set some global var.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true"></a><span class="kw">ls</span>(<span class="dt">pattern =</span> <span class="st">&quot;^</span><span class="ch">\\</span><span class="st">.MCn</span><span class="ch">\\</span><span class="st">.&quot;</span>, <span class="dt">all.names =</span> T)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true"></a><span class="co">#&gt; [1] &quot;.MCn.output&quot;        &quot;.MCn.palette&quot;       &quot;.MCn.palette_label&quot;</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true"></a><span class="co">#&gt; [4] &quot;.MCn.palette_ppcp&quot;  &quot;.MCn.palette_stat&quot;  &quot;.MCn.results&quot;      </span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true"></a><span class="co">#&gt; [7] &quot;.MCn.sirius&quot;</span></span></code></pre></div>
+<p>Users can manually modify the setup.</p>
+<div id="collate-structure" class="section level5">
+<h5>Collate structure</h5>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">collate_structure</span>(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true"></a>  <span class="dt">exclude_element =</span> <span class="kw">c</span>(<span class="st">&quot;Cl&quot;</span>, <span class="st">&quot;S&quot;</span>, <span class="st">&quot;P&quot;</span>),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true"></a>  <span class="dt">ppm_error =</span> <span class="dv">20</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true"></a>)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula run: collate_structure</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true"></a><span class="co">#&gt; ## collate_structure: check_dir</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true"></a><span class="co">#&gt; ## collate_structure: method_pick_formula_excellent</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true"></a><span class="co">#&gt; ## Method part: batch_get_formula</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true"></a><span class="co">#&gt; ## Method part: batch_get_structure</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true"></a><span class="co">#&gt; ## collate_structure: re-collate structure</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula Job Done: collate_structure.</span></span></code></pre></div>
+<p>The results:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true"></a>.MCn.formula_set</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 5 × 8</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true"></a><span class="co">#&gt;   .id       rank precursorFormula molecularFormula adduct   ZodiacScore</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true"></a><span class="co">#&gt;   &lt;chr&gt;    &lt;dbl&gt; &lt;chr&gt;            &lt;chr&gt;            &lt;chr&gt;          &lt;dbl&gt;</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true"></a><span class="co">#&gt; 1 gnps1234     1 C25H41NO7        C25H41NO7        [M + H]+       0.551</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true"></a><span class="co">#&gt; 2 gnps1537     1 C33H47N5O6       C33H47N5O6       [M + H]+       0    </span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true"></a><span class="co">#&gt; 3 gnps1539     1 C33H47N5O6       C33H47N5O6       [M + H]+       0    </span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true"></a><span class="co">#&gt; 4 gnps1567     1 C32H32N4O4       C32H32N4O4       [M + H]+       0    </span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true"></a><span class="co">#&gt; 5 gnps1588     1 C24H17N3O2       C24H17N3O2       [M + H]+       0    </span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true"></a><span class="co">#&gt; # … with 2 more variables: `massErrorPrecursor(ppm)` &lt;dbl&gt;, use_zodiac &lt;lgl&gt;</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true"></a>.MCn.structure_set</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 5 × 15</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true"></a><span class="co">#&gt;   .id      file_name  inchikey2D inchi molecularFormula  rank score name  smiles</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true"></a><span class="co">#&gt;   &lt;chr&gt;    &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt; &lt;chr&gt;            &lt;int&gt; &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; </span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true"></a><span class="co">#&gt; 1 gnps1234 C25H41NO7… YPJNTJHXP… InCh… C25H41NO7            1 -37.3 null  CCN1C…</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true"></a><span class="co">#&gt; 2 gnps1537 C33H47N5O… HZWIJOWMG… InCh… C33H47N5O6           1 -22.2 (6S,… CCC(C…</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true"></a><span class="co">#&gt; 3 gnps1539 C33H47N5O… GWLHFNKLJ… InCh… C33H47N5O6           1 -19.9 null  CCC(=…</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true"></a><span class="co">#&gt; 4 gnps1567 C32H32N4O… BUTLVTAFD… InCh… C32H32N4O4           1 -21.2 null  CC1(C…</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true"></a><span class="co">#&gt; 5 gnps1588 C24H17N3O… HXDZMNFJQ… InCh… C24H17N3O2           1 -18.1 Benz… CN1C(…</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true"></a><span class="co">#&gt; # … with 6 more variables: xlogp &lt;dbl&gt;, PubMedIds &lt;chr&gt;, links &lt;chr&gt;,</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true"></a><span class="co">#&gt; #   tanimotoSimilarity &lt;dbl&gt;, dbflags &lt;int64&gt;, structure_rank &lt;int&gt;</span></span></code></pre></div>
+<p>Next, we collate the metadata of chemical classes hierarchy.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">build_classes_tree_list</span>()</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true"></a><span class="co">#&gt; INFO: Classification Index in.MCn.sirius project ---&gt; canopus.tsv </span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true"></a><span class="co">#&gt; A total of 11 levels.</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true"></a><span class="co">#&gt; These classes (upon ClassyFire and CANOPUS) were separated into sub-lists.</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true"></a><span class="co">#&gt;         Use following arguments to get some specific classes:</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true"></a><span class="co">#&gt;         .MCn.class_tree_list[[3]] &gt;&gt;&gt; superclass</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true"></a><span class="co">#&gt;         .MCn.class_tree_list[[4]] &gt;&gt;&gt; class</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true"></a><span class="co">#&gt;         .MCn.class_tree_list[[5]] &gt;&gt;&gt; subclass</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true"></a><span class="co">#&gt;         .MCn.class_tree_list[[6]] &gt;&gt;&gt; level 5</span></span></code></pre></div>
+<p>The frame of returned project, e.g.:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true"></a>.MCn.class_tree_list[[<span class="dv">4</span>]]</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 442 × 6</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true"></a><span class="co">#&gt;    relativeIndex absoluteIndex id              name         parentId description</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true"></a><span class="co">#&gt;            &lt;int&gt;         &lt;int&gt; &lt;chr&gt;           &lt;chr&gt;        &lt;chr&gt;    &lt;chr&gt;      </span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true"></a><span class="co">#&gt;  1             3             3 CHEMONT:0000003 Thiepanes    CHEMONT… Organic co…</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true"></a><span class="co">#&gt;  2             5             6 CHEMONT:0000006 Benzoxazoli… CHEMONT… Organic co…</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true"></a><span class="co">#&gt;  3            15            18 CHEMONT:0000018 Anthracenes  CHEMONT… Organic co…</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true"></a><span class="co">#&gt;  4            16            19 CHEMONT:0000019 Dibenzocycl… CHEMONT… Compounds …</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true"></a><span class="co">#&gt;  5            17            20 CHEMONT:0000020 Fluorenes    CHEMONT… Compounds …</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true"></a><span class="co">#&gt;  6            18            21 CHEMONT:0000021 Indenes and… CHEMONT… Compounds …</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true"></a><span class="co">#&gt;  7            19            22 CHEMONT:0000022 Naphthacenes CHEMONT… Compounds …</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true"></a><span class="co">#&gt;  8            20            23 CHEMONT:0000023 Naphthalenes CHEMONT… Compounds …</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true"></a><span class="co">#&gt;  9            21            24 CHEMONT:0000024 Pentacenes   CHEMONT… Compounds …</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true"></a><span class="co">#&gt; 10            22            25 CHEMONT:0000025 Phenanthren… CHEMONT… Polycyclic…</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true"></a><span class="co">#&gt; # … with 432 more rows</span></span></code></pre></div>
+</div>
+<div id="collate-ppcp-data." class="section level5">
+<h5>Collate PPCP data.</h5>
+<p>This function retrieve all posterior probability of classification prediction (PPCP) of compounds and gathered them as <code>.MCn.ppcp_dataset</code>. Furthermore, in default, this function also summarise <code>.MCn.nebula_class</code> and <code>.MCn.nebula_index</code> upon the data of <code>.MCn.ppcp_dataset</code>. If done, <code>.MCn.nebula_index</code> would be returned.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">collate_ppcp</span>(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true"></a>  <span class="co">## due to the size of example dataset, we set much smaller herein</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true"></a>  <span class="co">## min_possess, 20 or more may be better</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true"></a>  <span class="dt">min_possess =</span> <span class="dv">1</span>,</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true"></a>  <span class="co">## 0.1 may better</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true"></a>  <span class="dt">max_possess_pct =</span> <span class="fl">0.9</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true"></a>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula run: collate_ppcp</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true"></a><span class="co">#&gt; ## collate_ppcp: check_dir</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true"></a><span class="co">#&gt; ## STAT of PPCP dataset: 5(formula with PPCP)/5(all formula) </span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true"></a><span class="co">#&gt; ## collate_ppcp: method_summarize_nebula_class</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true"></a><span class="co">#&gt; ## collate_ppcp: method_summarize_nebula_index.</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true"></a><span class="co">#&gt; ## Method part: class_retrieve</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true"></a><span class="co">#&gt; ## Method part: identical_filter</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true"></a><span class="co">#&gt; ## Method part: fun_filter_via_struc_score</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula Job Done: collate_ppcp.</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 25 × 5</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true"></a><span class="co">#&gt; # Groups:   relativeIndex [12]</span></span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true"></a><span class="co">#&gt;    relativeIndex name                             hierarchy .id         V1</span></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true"></a><span class="co">#&gt;            &lt;int&gt; &lt;chr&gt;                                &lt;int&gt; &lt;chr&gt;    &lt;dbl&gt;</span></span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true"></a><span class="co">#&gt;  1             9 Lipids and lipid-like molecules          3 gnps1234 0.995</span></span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true"></a><span class="co">#&gt;  2           233 Phenylpropanoids and polyketides         3 gnps1537 0.998</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true"></a><span class="co">#&gt;  3           233 Phenylpropanoids and polyketides         3 gnps1539 0.999</span></span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true"></a><span class="co">#&gt;  4           235 Organic acids and derivatives            3 gnps1537 0.999</span></span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true"></a><span class="co">#&gt;  5           235 Organic acids and derivatives            3 gnps1539 1.00 </span></span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true"></a><span class="co">#&gt;  6           235 Organic acids and derivatives            3 gnps1567 0.997</span></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true"></a><span class="co">#&gt;  7           235 Organic acids and derivatives            3 gnps1588 0.990</span></span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true"></a><span class="co">#&gt;  8           247 Alkaloids and derivatives                3 gnps1234 0.998</span></span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true"></a><span class="co">#&gt;  9          1298 Benzenoids                               3 gnps1537 0.999</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true"></a><span class="co">#&gt; 10          1298 Benzenoids                               3 gnps1539 0.999</span></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true"></a><span class="co">#&gt; # … with 15 more rows</span></span></code></pre></div>
+<p>In addition, <code>collate_ppcp</code> would set following global var:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true"></a><span class="kw">head</span>(.MCn.ppcp_dataset, <span class="dt">n =</span> <span class="dv">1</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true"></a><span class="co">#&gt; $gnps1234</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true"></a><span class="co">#&gt;                 V1 relativeIndex</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true"></a><span class="co">#&gt;    1: 9.999967e-01             0</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true"></a><span class="co">#&gt;    2: 1.175820e-05             1</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true"></a><span class="co">#&gt;    3: 9.987737e-01             2</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true"></a><span class="co">#&gt;    4: 8.464927e-10             3</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true"></a><span class="co">#&gt;    5: 3.867385e-10             4</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true"></a><span class="co">#&gt;   ---                           </span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true"></a><span class="co">#&gt; 2505: 1.825751e-11          2504</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true"></a><span class="co">#&gt; 2506: 1.821264e-13          2505</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true"></a><span class="co">#&gt; 2507: 2.369786e-15          2506</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true"></a><span class="co">#&gt; 2508: 7.240430e-12          2507</span></span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true"></a><span class="co">#&gt; 2509: 9.999823e-01          2508</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true"></a><span class="kw">head</span>(.MCn.nebula_class, <span class="dt">n =</span> <span class="dv">1</span>) <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true"></a><span class="st">  </span><span class="kw">lapply</span>(dplyr<span class="op">::</span>as_tibble)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true"></a><span class="co">#&gt; $gnps1234</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 26 × 6</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true"></a><span class="co">#&gt;    relativeIndex    V1 hierarchy absoluteIndex id              name             </span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true"></a><span class="co">#&gt;            &lt;int&gt; &lt;dbl&gt;     &lt;int&gt;         &lt;int&gt; &lt;chr&gt;           &lt;chr&gt;            </span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true"></a><span class="co">#&gt;  1          2012 1.00          6          3781 CHEMONT:0003788 Aconitane-type d…</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true"></a><span class="co">#&gt;  2          1302 1.00          6          2451 CHEMONT:0002452 Tertiary amines  </span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true"></a><span class="co">#&gt;  3           593 0.999         6          1292 CHEMONT:0001292 Cyclic alcohols …</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true"></a><span class="co">#&gt;  4           512 0.995         6          1167 CHEMONT:0001167 Dialkyl ethers   </span></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true"></a><span class="co">#&gt;  5           834 0.971         6          1669 CHEMONT:0001670 Tertiary alcohols</span></span>
+<span id="cb12-26"><a href="#cb12-26" aria-hidden="true"></a><span class="co">#&gt;  6          1191 0.962         6          2285 CHEMONT:0002286 Polyols          </span></span>
+<span id="cb12-27"><a href="#cb12-27" aria-hidden="true"></a><span class="co">#&gt;  7           826 0.958         6          1660 CHEMONT:0001661 Secondary alcoho…</span></span>
+<span id="cb12-28"><a href="#cb12-28" aria-hidden="true"></a><span class="co">#&gt;  8          1309 0.941         6          2459 CHEMONT:0002460 Alkanolamines    </span></span>
+<span id="cb12-29"><a href="#cb12-29" aria-hidden="true"></a><span class="co">#&gt;  9          1299 1.00          5          2448 CHEMONT:0002449 Amines           </span></span>
+<span id="cb12-30"><a href="#cb12-30" aria-hidden="true"></a><span class="co">#&gt; 10           116 1.00          5           129 CHEMONT:0000129 Alcohols and pol…</span></span>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true"></a><span class="co">#&gt; # … with 16 more rows</span></span></code></pre></div>
+<p>   Indeed, the above prepared instance data is too small to show the detail of the following function of MCnebula. Hence, we used another projects which has been collated done via above functions.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true"></a><span class="co">### the following project were auto-loaded while use &#39;library(MCnebula)&#39;</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true"></a>inst_formula_set</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 700 × 8</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true"></a><span class="co">#&gt;    .id       rank precursorFormula molecularFormula adduct    ZodiacScore</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true"></a><span class="co">#&gt;    &lt;chr&gt;    &lt;dbl&gt; &lt;chr&gt;            &lt;chr&gt;            &lt;chr&gt;           &lt;dbl&gt;</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true"></a><span class="co">#&gt;  1 gnps1588     1 C24H17N3O2       C24H17N3O2       [M + H]+        0    </span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true"></a><span class="co">#&gt;  2 gnps201      1 C17H20N2O5S      C17H20N2O5S      [M + H]+        0    </span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true"></a><span class="co">#&gt;  3 gnps2137     1 C35H46O11        C35H46O11        [M + K]+        0.699</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true"></a><span class="co">#&gt;  4 gnps2588     1 C22H26O11        C22H26O11        [M + H]+        0    </span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true"></a><span class="co">#&gt;  5 gnps2679     1 C32H38N2O6       C32H38N2O6       [M + H]+        0    </span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true"></a><span class="co">#&gt;  6 gnps2731     1 C30H28O12        C30H28O12        [M + H]+        0    </span></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true"></a><span class="co">#&gt;  7 gnps2826     1 C32H56O13        C32H56O13        [M + H]+        0    </span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true"></a><span class="co">#&gt;  8 gnps3071     1 C17H20O5         C17H20O5         [M + Na]+       0    </span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true"></a><span class="co">#&gt;  9 gnps3116     1 C20H21NO4        C20H21NO4        [M + H]+        0    </span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true"></a><span class="co">#&gt; 10 gnps3638     1 C19H22O5         C19H22O5         [M + H]+        0    </span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true"></a><span class="co">#&gt; # … with 690 more rows, and 2 more variables: `massErrorPrecursor(ppm)` &lt;dbl&gt;,</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true"></a><span class="co">#&gt; #   use_zodiac &lt;lgl&gt;</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true"></a>inst_structure_set</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 700 × 7</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true"></a><span class="co">#&gt;    .id      file_name         score smiles tanimotoSimilar… structure_rank name </span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true"></a><span class="co">#&gt;    &lt;chr&gt;    &lt;chr&gt;             &lt;dbl&gt; &lt;chr&gt;             &lt;dbl&gt;          &lt;dbl&gt; &lt;chr&gt;</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true"></a><span class="co">#&gt;  1 gnps4260 C18H26N2O9_[M+H]+ -34.3 CC(C(…            0.944              1 null </span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true"></a><span class="co">#&gt;  2 gnps7278 C23H36O6_[M+H]+   -32.2 CCC(C…            0.921              1 null </span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true"></a><span class="co">#&gt;  3 gnps3385 C15H15NO3_[M+H]+  -75.4 C1=CC…            0.613              1 null </span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true"></a><span class="co">#&gt;  4 gnps1779 C16H17NO3_[M+H]+  -14.5 C1CCN…            0.989              1 null </span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true"></a><span class="co">#&gt;  5 gnps7175 C8H15N5S_[M+H]+   -11.4 CCNC1…            1                  1 null </span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true"></a><span class="co">#&gt;  6 gnps236  C18H20N2_[M+H]+   -10.5 CN1CC…            1                  1 null </span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true"></a><span class="co">#&gt;  7 gnps2588 C22H26O11_[M+H]+  -13.6 CC(C)…            1                  1 null </span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true"></a><span class="co">#&gt;  8 gnps5852 C33H52O13_[M+Na]+ -52.0 CC12C…            0.843              1 null </span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true"></a><span class="co">#&gt;  9 gnps4461 C12H14O5_[M+H]+   -37.0 CCOC(…            0.854              1 null </span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true"></a><span class="co">#&gt; 10 gnps3779 C23H22O13_[M+H]+  -11.7 CC(=O…            1                  1 null </span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true"></a><span class="co">#&gt; # … with 690 more rows</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true"></a><span class="kw">head</span>(inst_ppcp_dataset, <span class="dt">n =</span> <span class="dv">1</span>)</span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true"></a><span class="co">#&gt; $gnps106</span></span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true"></a><span class="co">#&gt;         V1 relativeIndex</span></span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true"></a><span class="co">#&gt;    1: 1.00             0</span></span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true"></a><span class="co">#&gt;    2: 0.00             1</span></span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true"></a><span class="co">#&gt;    3: 0.01             2</span></span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true"></a><span class="co">#&gt;    4: 0.00             3</span></span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true"></a><span class="co">#&gt;    5: 0.00             4</span></span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true"></a><span class="co">#&gt;   ---                   </span></span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true"></a><span class="co">#&gt; 2505: 0.00          2504</span></span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true"></a><span class="co">#&gt; 2506: 0.00          2505</span></span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true"></a><span class="co">#&gt; 2507: 0.00          2506</span></span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true"></a><span class="co">#&gt; 2508: 0.00          2507</span></span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true"></a><span class="co">#&gt; 2509: 1.00          2508</span></span></code></pre></div>
+<p>We set these data as global var, so as the MCnebula function could recognized them without additional parameters.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true"></a>.MCn.formula_set &lt;-<span class="st"> </span>inst_formula_set</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true"></a>.MCn.structure_set &lt;-<span class="st"> </span>inst_structure_set</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true"></a>.MCn.ppcp_dataset &lt;-<span class="st"> </span>inst_ppcp_dataset</span></code></pre></div>
+<p>Re-execute the command:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">collate_ppcp</span>(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true"></a>  <span class="dt">min_possess =</span> <span class="dv">20</span>,</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true"></a>  <span class="dt">max_possess_pct =</span> <span class="fl">0.1</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true"></a>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula run: collate_ppcp</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true"></a><span class="co">#&gt; ## collate_ppcp: check_dir</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true"></a><span class="co">#&gt; ## STAT of PPCP dataset: 1(formula with PPCP)/5(all formula) </span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true"></a><span class="co">#&gt; ## collate_ppcp: method_summarize_nebula_class</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true"></a><span class="co">#&gt; ## collate_ppcp: method_summarize_nebula_index.</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true"></a><span class="co">#&gt; ## Method part: class_retrieve</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true"></a><span class="co">#&gt; ## Method part: identical_filter</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true"></a><span class="co">#&gt; ## Method part: fun_filter_via_struc_score</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula Job Done: collate_ppcp.</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 1,332 × 5</span></span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true"></a><span class="co">#&gt; # Groups:   relativeIndex [38]</span></span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true"></a><span class="co">#&gt;    relativeIndex name                   hierarchy .id         V1</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true"></a><span class="co">#&gt;            &lt;int&gt; &lt;chr&gt;                      &lt;int&gt; &lt;chr&gt;    &lt;dbl&gt;</span></span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true"></a><span class="co">#&gt;  1             4 Organosulfur compounds         3 gnps1816  1   </span></span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true"></a><span class="co">#&gt;  2             4 Organosulfur compounds         3 gnps1914  1   </span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true"></a><span class="co">#&gt;  3             4 Organosulfur compounds         3 gnps201   1   </span></span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true"></a><span class="co">#&gt;  4             4 Organosulfur compounds         3 gnps449   0.99</span></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true"></a><span class="co">#&gt;  5             4 Organosulfur compounds         3 gnps469   0.97</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true"></a><span class="co">#&gt;  6             4 Organosulfur compounds         3 gnps494   0.98</span></span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true"></a><span class="co">#&gt;  7             4 Organosulfur compounds         3 gnps4969  1   </span></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true"></a><span class="co">#&gt;  8             4 Organosulfur compounds         3 gnps5242  0.99</span></span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true"></a><span class="co">#&gt;  9             4 Organosulfur compounds         3 gnps5693  0.99</span></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true"></a><span class="co">#&gt; 10             4 Organosulfur compounds         3 gnps5917  0.99</span></span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true"></a><span class="co">#&gt; # … with 1,322 more rows</span></span></code></pre></div>
+</div>
+</div>
+<div id="generate-network-graph" class="section level4">
+<h4>Generate network graph</h4>
+<div id="generate-parent-nebula-graph" class="section level5">
+<h5>Generate parent-nebula graph</h5>
+<p>Of note, this function will conduct spectral similarity (fragmentation spectra) computation and reformated these similarity (cosine) as edges file. This is performed via <code>MSnbase::compareSpectra</code>. It usually cost some time to get results. Here, we used a randomly formed edges file to avoid it.</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true"></a>edges &lt;-<span class="st"> </span>.MCn.formula_set<span class="op">$</span>.id <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true"></a><span class="st">  </span><span class="kw">combn</span>(<span class="dv">2</span>) <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true"></a><span class="st">  </span><span class="kw">t</span>()</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true"></a><span class="kw">set.seed</span>(<span class="dv">100</span>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true"></a><span class="co">### randomly get combination.</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true"></a>edges &lt;-<span class="st"> </span>edges[<span class="kw">sample</span>(<span class="dv">1</span><span class="op">:</span><span class="kw">nrow</span>(edges), <span class="dv">1000</span>), ] <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true"></a><span class="st">  </span><span class="kw">data.frame</span>() <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true"></a><span class="st">  </span>dplyr<span class="op">::</span><span class="kw">as_tibble</span>() <span class="op">%&gt;%</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true"></a><span class="st">  </span>dplyr<span class="op">::</span><span class="kw">rename</span>(</span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true"></a>    <span class="dt">.id_1 =</span> <span class="dv">1</span>,</span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true"></a>    <span class="dt">.id_2 =</span> <span class="dv">2</span></span>
+<span id="cb16-12"><a href="#cb16-12" aria-hidden="true"></a>  ) <span class="op">%&gt;%</span><span class="st"> </span></span>
+<span id="cb16-13"><a href="#cb16-13" aria-hidden="true"></a><span class="st">  </span>dplyr<span class="op">::</span><span class="kw">mutate</span>(</span>
+<span id="cb16-14"><a href="#cb16-14" aria-hidden="true"></a>    <span class="dt">dotproduct =</span> <span class="kw">rnorm</span>(<span class="dv">1000</span>, <span class="dt">mean =</span> <span class="fl">0.5</span>, <span class="dt">sd =</span> <span class="fl">0.1</span>), </span>
+<span id="cb16-15"><a href="#cb16-15" aria-hidden="true"></a>    <span class="dt">mass_diff =</span> <span class="kw">rnorm</span>(<span class="dv">1000</span>, <span class="dt">mean =</span> <span class="dv">200</span>, <span class="dt">sd =</span> <span class="dv">50</span>),</span>
+<span id="cb16-16"><a href="#cb16-16" aria-hidden="true"></a>  )</span>
+<span id="cb16-17"><a href="#cb16-17" aria-hidden="true"></a>tmp.edges &lt;-<span class="st"> </span><span class="kw">tempfile</span>()</span>
+<span id="cb16-18"><a href="#cb16-18" aria-hidden="true"></a><span class="co">### write done</span></span>
+<span id="cb16-19"><a href="#cb16-19" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">write_tsv</span>(edges, <span class="dt">filename =</span> tmp.edges)</span>
+<span id="cb16-20"><a href="#cb16-20" aria-hidden="true"></a><span class="co">### show details</span></span>
+<span id="cb16-21"><a href="#cb16-21" aria-hidden="true"></a>edges</span>
+<span id="cb16-22"><a href="#cb16-22" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 1,000 × 4</span></span>
+<span id="cb16-23"><a href="#cb16-23" aria-hidden="true"></a><span class="co">#&gt;    .id_1    .id_2    dotproduct mass_diff</span></span>
+<span id="cb16-24"><a href="#cb16-24" aria-hidden="true"></a><span class="co">#&gt;    &lt;chr&gt;    &lt;chr&gt;         &lt;dbl&gt;     &lt;dbl&gt;</span></span>
+<span id="cb16-25"><a href="#cb16-25" aria-hidden="true"></a><span class="co">#&gt;  1 gnps2299 gnps8202      0.791     150. </span></span>
+<span id="cb16-26"><a href="#cb16-26" aria-hidden="true"></a><span class="co">#&gt;  2 gnps2056 gnps3366      0.503     224. </span></span>
+<span id="cb16-27"><a href="#cb16-27" aria-hidden="true"></a><span class="co">#&gt;  3 gnps4151 gnps8192      0.414     199. </span></span>
+<span id="cb16-28"><a href="#cb16-28" aria-hidden="true"></a><span class="co">#&gt;  4 gnps2468 gnps2494      0.575     129. </span></span>
+<span id="cb16-29"><a href="#cb16-29" aria-hidden="true"></a><span class="co">#&gt;  5 gnps5852 gnps8615      0.604      90.1</span></span>
+<span id="cb16-30"><a href="#cb16-30" aria-hidden="true"></a><span class="co">#&gt;  6 gnps2503 gnps4589      0.742     212. </span></span>
+<span id="cb16-31"><a href="#cb16-31" aria-hidden="true"></a><span class="co">#&gt;  7 gnps4564 gnps4790      0.650     128. </span></span>
+<span id="cb16-32"><a href="#cb16-32" aria-hidden="true"></a><span class="co">#&gt;  8 gnps2437 gnps5779      0.424     256. </span></span>
+<span id="cb16-33"><a href="#cb16-33" aria-hidden="true"></a><span class="co">#&gt;  9 gnps4589 gnps8087      0.530     223. </span></span>
+<span id="cb16-34"><a href="#cb16-34" aria-hidden="true"></a><span class="co">#&gt; 10 gnps4661 gnps6791      0.543     228. </span></span>
+<span id="cb16-35"><a href="#cb16-35" aria-hidden="true"></a><span class="co">#&gt; # … with 990 more rows</span></span></code></pre></div>
+<p>Subsequently, we use this edges file to generate parent-nebula graph.</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">generate_parent_nebula</span>(</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true"></a>  <span class="dt">rm_parent_isolate_nodes =</span> T,</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true"></a>  <span class="co">## specify the edges file</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true"></a>  <span class="dt">edges_file =</span> tmp.edges</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true"></a>)</span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula run: generate_parent_nebula</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true"></a><span class="co">#&gt; ## generate_parent_nebula: file.exists(edges_file) == T.</span></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true"></a><span class="co">#&gt; Escape from time-consuming computation</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula Job Done: generate_parent_nebula</span></span></code></pre></div>
+<p>This function will generate nodes data (chemical formula and strucutre annotation) and edges data (if the edges file were not specified but real-time computed). For most, parent-nebula graph was generated.</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true"></a>.MCn.parent_nodes</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true"></a><span class="co">#&gt; # A tibble: 700 × 14</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true"></a><span class="co">#&gt;    .id       rank precursorFormula molecularFormula adduct    ZodiacScore</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true"></a><span class="co">#&gt;    &lt;chr&gt;    &lt;dbl&gt; &lt;chr&gt;            &lt;chr&gt;            &lt;chr&gt;           &lt;dbl&gt;</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true"></a><span class="co">#&gt;  1 gnps106      1 C11H12O5         C11H12O5         [M + H]+        1    </span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true"></a><span class="co">#&gt;  2 gnps108      1 C17H35NO2        C17H35NO2        [M + H]+        1    </span></span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true"></a><span class="co">#&gt;  3 gnps1146     1 C19H22O11        C19H22O11        [M + Na]+       0.880</span></span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true"></a><span class="co">#&gt;  4 gnps1153     1 C12H21N          C12H21N          [M + H]+        1    </span></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true"></a><span class="co">#&gt;  5 gnps1167     1 C22H32O3         C22H32O3         [M + H]+        1    </span></span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true"></a><span class="co">#&gt;  6 gnps1168     1 C21H26O5         C21H26O5         [M + H]+        1    </span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true"></a><span class="co">#&gt;  7 gnps1170     1 C24H34O4         C24H34O4         [M + H]+        1    </span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true"></a><span class="co">#&gt;  8 gnps1171     1 C21H30O2         C21H30O2         [M + H]+        1    </span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true"></a><span class="co">#&gt;  9 gnps1175     1 C22H38O5         C22H38O5         [M + Na]+       1    </span></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true"></a><span class="co">#&gt; 10 gnps1176     1 C21H28O5         C21H28O5         [M + H]+        1    </span></span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true"></a><span class="co">#&gt; # … with 690 more rows, and 8 more variables: `massErrorPrecursor(ppm)` &lt;dbl&gt;,</span></span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true"></a><span class="co">#&gt; #   use_zodiac &lt;lgl&gt;, file_name &lt;chr&gt;, score &lt;dbl&gt;, smiles &lt;chr&gt;,</span></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true"></a><span class="co">#&gt; #   tanimotoSimilarity &lt;dbl&gt;, structure_rank &lt;dbl&gt;, compound_name &lt;chr&gt;</span></span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true"></a>.MCn.parent_graph</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true"></a><span class="co">#&gt; IGRAPH e278cd1 DN-- 661 1000 -- </span></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true"></a><span class="co">#&gt; + attr: name (v/c), rank (v/n), precursorFormula (v/c),</span></span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true"></a><span class="co">#&gt; | molecularFormula (v/c), adduct (v/c), ZodiacScore (v/n),</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true"></a><span class="co">#&gt; | massErrorPrecursor(ppm) (v/n), use_zodiac (v/l), file_name (v/c),</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true"></a><span class="co">#&gt; | score (v/n), smiles (v/c), tanimotoSimilarity (v/n), structure_rank</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true"></a><span class="co">#&gt; | (v/n), compound_name (v/c), dotproduct (e/n), mass_diff (e/n)</span></span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true"></a><span class="co">#&gt; + edges from e278cd1 (vertex names):</span></span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true"></a><span class="co">#&gt;  [1] gnps2299-&gt;gnps8202 gnps2056-&gt;gnps3366 gnps4151-&gt;gnps8192 gnps2468-&gt;gnps2494</span></span>
+<span id="cb18-27"><a href="#cb18-27" aria-hidden="true"></a><span class="co">#&gt;  [5] gnps5852-&gt;gnps8615 gnps2503-&gt;gnps4589 gnps4564-&gt;gnps4790 gnps2437-&gt;gnps5779</span></span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true"></a><span class="co">#&gt;  [9] gnps4589-&gt;gnps8087 gnps4661-&gt;gnps6791 gnps2966-&gt;gnps633  gnps5860-&gt;gnps6479</span></span>
+<span id="cb18-29"><a href="#cb18-29" aria-hidden="true"></a><span class="co">#&gt; [13] gnps4898-&gt;gnps7107 gnps2345-&gt;gnps3674 gnps3268-&gt;gnps4120 gnps3164-&gt;gnps8482</span></span>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true"></a><span class="co">#&gt; + ... omitted several edges</span></span></code></pre></div>
+</div>
+<div id="generate-child-nebulae-graph" class="section level5">
+<h5>Generate child-nebulae graph</h5>
+<p>This function generate multiple network graph upon parent-nebula (nodes and edges) according to compound classification.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">generate_child_nebulae</span>(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true"></a>  <span class="dt">max_edges =</span> <span class="dv">5</span>,</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true"></a>  <span class="co">## this will write a output of .graphml, which support by Cytoscape.</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true"></a>  <span class="dt">output_format =</span> <span class="st">&quot;graphml&quot;</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true"></a>)</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula run: generate_child_nebulae</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true"></a><span class="co">#&gt; [INFO] MCnebula Job Done: generate_child_nebulae</span></span></code></pre></div>
+<p>These graph were stored in list.</p>
+<pre><code>head(.MCn.child_graph_list, n = 2)</code></pre>
+</div>
+</div>
+<div id="visualization-of-chemical-nebula" class="section level4">
+<h4>Visualization of chemical-nebula</h4>
+<div id="visualization-of-parent-nebula" class="section level5">
+<h5>Visualization of parent-nebula</h5>
+<p>All visualization in MCnebula package are output with .svg image.</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">visualize_parent_nebula</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true"></a>  <span class="dt">layout =</span> <span class="st">&quot;kk&quot;</span>,</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true"></a>  <span class="co">## map nodes color with superclass</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true"></a>  <span class="dt">nodes_color =</span> <span class="kw">c</span>(<span class="st">&quot;hierarchy&quot;</span> =<span class="st"> </span><span class="dv">3</span>),</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true"></a>  <span class="dt">width =</span> <span class="dv">25</span>,</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true"></a>  <span class="dt">height =</span> <span class="dv">20</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true"></a>)</span></code></pre></div>
+<p><code>rsvg::rsvg_png</code> could be applied to convert .svg to other png file.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true"></a>from.svg &lt;-<span class="st"> </span><span class="kw">paste0</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true"></a>  .MCn.output, <span class="st">&quot;/&quot;</span>, .MCn.results,</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true"></a>  <span class="st">&quot;/parent_nebula/parent_nebula.svg&quot;</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true"></a>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true"></a>to.png &lt;-<span class="st"> </span><span class="kw">paste0</span>(</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true"></a>  .MCn.output, <span class="st">&quot;/&quot;</span>, .MCn.results,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true"></a>  <span class="st">&quot;/parent_nebula/parent_nebula.png&quot;</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true"></a>)</span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true"></a>rsvg<span class="op">::</span><span class="kw">rsvg_png</span>(from.svg, to.png)</span></code></pre></div>
+</div>
+<div id="visualization-of-child-nebula" class="section level5">
+<h5>Visualization of child-nebula</h5>
+<p>This function draw child-nebula in grid panel. The overview of child-nebula shows the abundant classes of this LC-MS/MS dataset.</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true"></a>MCnebula<span class="op">::</span><span class="kw">visualize_child_nebulae</span>()</span></code></pre></div>
+</div>
+</div>
+</div>
+</div>
+<div id="information" class="section level2">
+<h2>Information</h2>
+<p>All output files:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true"></a><span class="kw">list.files</span>(<span class="kw">paste0</span>(.MCn.output, <span class="st">&quot;/&quot;</span>, .MCn.results), <span class="dt">recursive =</span> T)</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true"></a><span class="co">#&gt;  [1] &quot;child_nebula/Alkanolamines.graphml&quot;                   </span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true"></a><span class="co">#&gt;  [2] &quot;child_nebula/Aralkylamines.graphml&quot;                   </span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true"></a><span class="co">#&gt;  [3] &quot;child_nebula/Benzenediols.graphml&quot;                    </span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true"></a><span class="co">#&gt;  [4] &quot;child_nebula/Benzoic acid esters.graphml&quot;             </span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true"></a><span class="co">#&gt;  [5] &quot;child_nebula/Benzoyl derivatives.graphml&quot;             </span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true"></a><span class="co">#&gt;  [6] &quot;child_nebula/Catechols.graphml&quot;                       </span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true"></a><span class="co">#&gt;  [7] &quot;child_nebula/Coumarins and derivatives.graphml&quot;       </span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true"></a><span class="co">#&gt;  [8] &quot;child_nebula/Dialkyl ethers.graphml&quot;                  </span></span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true"></a><span class="co">#&gt;  [9] &quot;child_nebula/Disaccharides.graphml&quot;                   </span></span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true"></a><span class="co">#&gt; [10] &quot;child_nebula/Diterpenoids.graphml&quot;                    </span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true"></a><span class="co">#&gt; [11] &quot;child_nebula/Fatty acids and conjugates.graphml&quot;      </span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true"></a><span class="co">#&gt; [12] &quot;child_nebula/Flavans.graphml&quot;                         </span></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true"></a><span class="co">#&gt; [13] &quot;child_nebula/Flavonoid glycosides.graphml&quot;            </span></span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true"></a><span class="co">#&gt; [14] &quot;child_nebula/Flavonoids.graphml&quot;                      </span></span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true"></a><span class="co">#&gt; [15] &quot;child_nebula/Furans.graphml&quot;                          </span></span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true"></a><span class="co">#&gt; [16] &quot;child_nebula/Gamma butyrolactones.graphml&quot;            </span></span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true"></a><span class="co">#&gt; [17] &quot;child_nebula/Hydroxy acids and derivatives.graphml&quot;   </span></span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true"></a><span class="co">#&gt; [18] &quot;child_nebula/Indoles and derivatives.graphml&quot;         </span></span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true"></a><span class="co">#&gt; [19] &quot;child_nebula/Lactams.graphml&quot;                         </span></span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true"></a><span class="co">#&gt; [20] &quot;child_nebula/Methoxybenzenes.graphml&quot;                 </span></span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true"></a><span class="co">#&gt; [21] &quot;child_nebula/Methoxyphenols.graphml&quot;                  </span></span>
+<span id="cb24-23"><a href="#cb24-23" aria-hidden="true"></a><span class="co">#&gt; [22] &quot;child_nebula/Monoterpenoids.graphml&quot;                  </span></span>
+<span id="cb24-24"><a href="#cb24-24" aria-hidden="true"></a><span class="co">#&gt; [23] &quot;child_nebula/O-methylated flavonoids.graphml&quot;         </span></span>
+<span id="cb24-25"><a href="#cb24-25" aria-hidden="true"></a><span class="co">#&gt; [24] &quot;child_nebula/Organosulfur compounds.graphml&quot;          </span></span>
+<span id="cb24-26"><a href="#cb24-26" aria-hidden="true"></a><span class="co">#&gt; [25] &quot;child_nebula/Oxosteroids.graphml&quot;                     </span></span>
+<span id="cb24-27"><a href="#cb24-27" aria-hidden="true"></a><span class="co">#&gt; [26] &quot;child_nebula/Pregnane steroids.graphml&quot;               </span></span>
+<span id="cb24-28"><a href="#cb24-28" aria-hidden="true"></a><span class="co">#&gt; [27] &quot;child_nebula/Primary amines.graphml&quot;                  </span></span>
+<span id="cb24-29"><a href="#cb24-29" aria-hidden="true"></a><span class="co">#&gt; [28] &quot;child_nebula/Pyridines and derivatives.graphml&quot;       </span></span>
+<span id="cb24-30"><a href="#cb24-30" aria-hidden="true"></a><span class="co">#&gt; [29] &quot;child_nebula/Pyrrolidines.graphml&quot;                    </span></span>
+<span id="cb24-31"><a href="#cb24-31" aria-hidden="true"></a><span class="co">#&gt; [30] &quot;child_nebula/Sesquiterpenoids.graphml&quot;                </span></span>
+<span id="cb24-32"><a href="#cb24-32" aria-hidden="true"></a><span class="co">#&gt; [31] &quot;child_nebula/Steroids and steroid derivatives.graphml&quot;</span></span>
+<span id="cb24-33"><a href="#cb24-33" aria-hidden="true"></a><span class="co">#&gt; [32] &quot;child_nebula/Styrenes.graphml&quot;                        </span></span>
+<span id="cb24-34"><a href="#cb24-34" aria-hidden="true"></a><span class="co">#&gt; [33] &quot;child_nebula/Terpene glycosides.graphml&quot;              </span></span>
+<span id="cb24-35"><a href="#cb24-35" aria-hidden="true"></a><span class="co">#&gt; [34] &quot;child_nebula/Terpene lactones.graphml&quot;                </span></span>
+<span id="cb24-36"><a href="#cb24-36" aria-hidden="true"></a><span class="co">#&gt; [35] &quot;child_nebula/Tertiary amines.graphml&quot;                 </span></span>
+<span id="cb24-37"><a href="#cb24-37" aria-hidden="true"></a><span class="co">#&gt; [36] &quot;child_nebula/Tetrahydrofurans.graphml&quot;                </span></span>
+<span id="cb24-38"><a href="#cb24-38" aria-hidden="true"></a><span class="co">#&gt; [37] &quot;child_nebula/Triterpenoids.graphml&quot;                   </span></span>
+<span id="cb24-39"><a href="#cb24-39" aria-hidden="true"></a><span class="co">#&gt; [38] &quot;child_nebula/Vinylogous esters.graphml&quot;               </span></span>
+<span id="cb24-40"><a href="#cb24-40" aria-hidden="true"></a><span class="co">#&gt; [39] &quot;method_pick_formula_excellent.structure.tsv&quot;          </span></span>
+<span id="cb24-41"><a href="#cb24-41" aria-hidden="true"></a><span class="co">#&gt; [40] &quot;method_pick_formula_excellent.tsv&quot;                    </span></span>
+<span id="cb24-42"><a href="#cb24-42" aria-hidden="true"></a><span class="co">#&gt; [41] &quot;nebula_index.tsv&quot;                                     </span></span>
+<span id="cb24-43"><a href="#cb24-43" aria-hidden="true"></a><span class="co">#&gt; [42] &quot;parent_nebula/parent_nebula_edges.tsv&quot;                </span></span>
+<span id="cb24-44"><a href="#cb24-44" aria-hidden="true"></a><span class="co">#&gt; [43] &quot;parent_nebula/parent_nebula_nodes.tsv&quot;                </span></span>
+<span id="cb24-45"><a href="#cb24-45" aria-hidden="true"></a><span class="co">#&gt; [44] &quot;parent_nebula/parent_nebula.graphml&quot;</span></span></code></pre></div>
+<p>Other information:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true"></a><span class="kw">sessionInfo</span>()</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true"></a><span class="co">#&gt; R version 4.2.0 (2022-04-22)</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true"></a><span class="co">#&gt; Platform: x86_64-pc-linux-gnu (64-bit)</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true"></a><span class="co">#&gt; Running under: Pop!_OS 22.04 LTS</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true"></a><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.10.0</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true"></a><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.10.0</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true"></a><span class="co">#&gt;  [1] LC_CTYPE=en_US.UTF-8       LC_NUMERIC=C              </span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true"></a><span class="co">#&gt;  [3] LC_TIME=en_US.UTF-8        LC_COLLATE=en_US.UTF-8    </span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true"></a><span class="co">#&gt;  [5] LC_MONETARY=en_US.UTF-8    LC_MESSAGES=en_US.UTF-8   </span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true"></a><span class="co">#&gt;  [7] LC_PAPER=en_US.UTF-8       LC_NAME=C                 </span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true"></a><span class="co">#&gt;  [9] LC_ADDRESS=C               LC_TELEPHONE=C            </span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true"></a><span class="co">#&gt; [11] LC_MEASUREMENT=en_US.UTF-8 LC_IDENTIFICATION=C       </span></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true"></a><span class="co">#&gt; [1] grid      stats     graphics  grDevices utils     datasets  methods  </span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true"></a><span class="co">#&gt; [8] base     </span></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true"></a><span class="co">#&gt; [1] ggraph_2.0.5        ggplot2_3.3.6       dplyr_1.0.9        </span></span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true"></a><span class="co">#&gt; [4] MCnebula_0.0.0.9000 testthat_3.1.4     </span></span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true"></a><span class="co">#&gt; </span></span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true"></a><span class="co">#&gt;   [1] colorspace_2.0-3      ellipsis_0.3.2        rprojroot_2.0.3      </span></span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true"></a><span class="co">#&gt;   [4] fs_1.5.2              clue_0.3-61           rstudioapi_0.13      </span></span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true"></a><span class="co">#&gt;   [7] mzR_2.30.0            farver_2.1.0          remotes_2.4.2        </span></span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true"></a><span class="co">#&gt;  [10] graphlayouts_0.8.0    affyio_1.66.0         bit64_4.0.5          </span></span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true"></a><span class="co">#&gt;  [13] ggrepel_0.9.1         fansi_1.0.3           codetools_0.2-18     </span></span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true"></a><span class="co">#&gt;  [16] ncdf4_1.19            doParallel_1.0.17     cachem_1.0.6         </span></span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true"></a><span class="co">#&gt;  [19] impute_1.70.0         knitr_1.39            polyclip_1.10-0      </span></span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true"></a><span class="co">#&gt;  [22] pkgload_1.2.4         jsonlite_1.8.0        cluster_2.1.3        </span></span>
+<span id="cb25-35"><a href="#cb25-35" aria-hidden="true"></a><span class="co">#&gt;  [25] vsn_3.64.0            ggforce_0.3.3         BiocManager_1.30.18  </span></span>
+<span id="cb25-36"><a href="#cb25-36" aria-hidden="true"></a><span class="co">#&gt;  [28] compiler_4.2.0        assertthat_0.2.1      fastmap_1.1.0        </span></span>
+<span id="cb25-37"><a href="#cb25-37" aria-hidden="true"></a><span class="co">#&gt;  [31] limma_3.52.1          cli_3.3.0             tweenr_1.0.2         </span></span>
+<span id="cb25-38"><a href="#cb25-38" aria-hidden="true"></a><span class="co">#&gt;  [34] htmltools_0.5.2       prettyunits_1.1.1     tools_4.2.0          </span></span>
+<span id="cb25-39"><a href="#cb25-39" aria-hidden="true"></a><span class="co">#&gt;  [37] igraph_1.3.2          gtable_0.3.0          glue_1.6.2           </span></span>
+<span id="cb25-40"><a href="#cb25-40" aria-hidden="true"></a><span class="co">#&gt;  [40] affy_1.74.0           reshape2_1.4.4        Rcpp_1.0.8.3         </span></span>
+<span id="cb25-41"><a href="#cb25-41" aria-hidden="true"></a><span class="co">#&gt;  [43] MALDIquant_1.21       Biobase_2.56.0        jquerylib_0.1.4      </span></span>
+<span id="cb25-42"><a href="#cb25-42" aria-hidden="true"></a><span class="co">#&gt;  [46] vctrs_0.4.1           svglite_2.1.0         preprocessCore_1.58.0</span></span>
+<span id="cb25-43"><a href="#cb25-43" aria-hidden="true"></a><span class="co">#&gt;  [49] iterators_1.0.14      xfun_0.31             stringr_1.4.0        </span></span>
+<span id="cb25-44"><a href="#cb25-44" aria-hidden="true"></a><span class="co">#&gt;  [52] ps_1.7.0              brio_1.1.3            lifecycle_1.0.1      </span></span>
+<span id="cb25-45"><a href="#cb25-45" aria-hidden="true"></a><span class="co">#&gt;  [55] devtools_2.4.3        XML_3.99-0.10         MASS_7.3-57          </span></span>
+<span id="cb25-46"><a href="#cb25-46" aria-hidden="true"></a><span class="co">#&gt;  [58] zlibbioc_1.42.0       scales_1.2.0          tidygraph_1.2.1      </span></span>
+<span id="cb25-47"><a href="#cb25-47" aria-hidden="true"></a><span class="co">#&gt;  [61] MSnbase_2.22.0        pcaMethods_1.88.0     ProtGenerics_1.28.0  </span></span>
+<span id="cb25-48"><a href="#cb25-48" aria-hidden="true"></a><span class="co">#&gt;  [64] parallel_4.2.0        yaml_2.3.5            memoise_2.0.1        </span></span>
+<span id="cb25-49"><a href="#cb25-49" aria-hidden="true"></a><span class="co">#&gt;  [67] pbapply_1.5-0         gridExtra_2.3         sass_0.4.1           </span></span>
+<span id="cb25-50"><a href="#cb25-50" aria-hidden="true"></a><span class="co">#&gt;  [70] stringi_1.7.6         S4Vectors_0.34.0      desc_1.4.1           </span></span>
+<span id="cb25-51"><a href="#cb25-51" aria-hidden="true"></a><span class="co">#&gt;  [73] foreach_1.5.2         BiocGenerics_0.42.0   pkgbuild_1.3.1       </span></span>
+<span id="cb25-52"><a href="#cb25-52" aria-hidden="true"></a><span class="co">#&gt;  [76] BiocParallel_1.30.3   systemfonts_1.0.4     rlang_1.0.2          </span></span>
+<span id="cb25-53"><a href="#cb25-53" aria-hidden="true"></a><span class="co">#&gt;  [79] pkgconfig_2.0.3       mzID_1.34.0           evaluate_0.15        </span></span>
+<span id="cb25-54"><a href="#cb25-54" aria-hidden="true"></a><span class="co">#&gt;  [82] lattice_0.20-45       purrr_0.3.4           bit_4.0.4            </span></span>
+<span id="cb25-55"><a href="#cb25-55" aria-hidden="true"></a><span class="co">#&gt;  [85] processx_3.6.0        tidyselect_1.1.2      ggsci_2.9            </span></span>
+<span id="cb25-56"><a href="#cb25-56" aria-hidden="true"></a><span class="co">#&gt;  [88] plyr_1.8.7            magrittr_2.0.3        R6_2.5.1             </span></span>
+<span id="cb25-57"><a href="#cb25-57" aria-hidden="true"></a><span class="co">#&gt;  [91] IRanges_2.30.0        generics_0.1.2        DBI_1.1.2            </span></span>
+<span id="cb25-58"><a href="#cb25-58" aria-hidden="true"></a><span class="co">#&gt;  [94] pillar_1.7.0          withr_2.5.0           MsCoreUtils_1.8.0    </span></span>
+<span id="cb25-59"><a href="#cb25-59" aria-hidden="true"></a><span class="co">#&gt;  [97] tibble_3.1.7          crayon_1.5.1          utf8_1.2.2           </span></span>
+<span id="cb25-60"><a href="#cb25-60" aria-hidden="true"></a><span class="co">#&gt; [100] rmarkdown_2.14        viridis_0.6.2         usethis_2.1.6        </span></span>
+<span id="cb25-61"><a href="#cb25-61" aria-hidden="true"></a><span class="co">#&gt; [103] data.table_1.14.2     callr_3.7.0           digest_0.6.29        </span></span>
+<span id="cb25-62"><a href="#cb25-62" aria-hidden="true"></a><span class="co">#&gt; [106] tidyr_1.2.0           stats4_4.2.0          munsell_0.5.0        </span></span>
+<span id="cb25-63"><a href="#cb25-63" aria-hidden="true"></a><span class="co">#&gt; [109] viridisLite_0.4.0     bslib_0.3.1           sessioninfo_1.2.2</span></span></code></pre></div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
